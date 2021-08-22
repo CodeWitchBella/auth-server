@@ -4,6 +4,27 @@ const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+
+const usersString = fs.readFileSync(path.join(__dirname, 'users.txt'), 'utf-8')
+let changed = false
+const users = new Map(usersString.split('\n').filter(line => line.includes(':') && !line.startsWith('#')).map(line => {
+  let [name, password] = line.split(':').map(v => v.trim())
+  if (!password.startsWith('$')) {
+    password = bcrypt.hashSync(password);
+    changed = true
+  }
+  return [ name, password ]
+}))
+if (changed) {
+  fs.writeFileSync(
+    path.join(__dirname, 'users.txt'),
+    Array.from(users.entries()).map(u => u.join(':')).join('\n') + '\n',
+    'utf-8'
+  )
+}
 
 const app = express();
 
@@ -22,12 +43,11 @@ dotenv.config();
 
 // config vars
 const port = process.env.AUTH_PORT || 3003;
-const authPassword = process.env.AUTH_PASSWORD;
 const tokenSecret = process.env.AUTH_TOKEN_SECRET;
 const defaultUser = 'user'; // default user when no username supplied
 const expiryDays = 7;
 
-if (!authPassword || !tokenSecret) {
+if (!tokenSecret) {
   console.error(
     'Misconfigured server. Environment variables AUTH_PASSWORD and/or AUTH_TOKEN_SECRET are not configured'
   );
@@ -57,7 +77,8 @@ const jwtVerify = (req, res, next) => {
 
 // using single password for the time being, but this could query a database etc
 const checkAuth = (user, pass) => {
-  if (pass === authPassword) return true;
+  const hash = users.get(user)
+  if (hash && bcrypt.compareSync(pass, hash)) return true;
   return false;
 };
 
@@ -94,7 +115,7 @@ app.get('/__auth/login', (req, res) => {
   const host = req.headers['x-original-host'];
 
   // check if user is already logged in
-  if (req.user) return res.redirect('/logged-in');
+  if (req.user) return res.redirect('/__auth/logged-in');
 
   // user not logged in, show login interface
   return res.render('login', {

@@ -9,18 +9,27 @@
   <body>
     <div class="container">
       <h1>Login</h1>
-      <input type="password" name="password" id="password" />
-      <input type="submit" value="Login" id="login" />
+      <form method="POST" action="/__auth/login">
+        <label>
+          <div>Name</div>
+          <input type="text" name="username" name="user" />
+        </label>
+        <label>
+          <div>Password</div>
+          <input type="password" name="password" name="password" />
+        </label>
+        <input type="submit" value="Login" name="login" />
+      </form>
       <p id="message"></p>
     </div>
 
     <script>
       // post password to /auth
-      const login = (password) => {
+      const login = (body) => {
         fetch('/__auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
+          body: JSON.stringify(body),
         })
           .then((response) => {
             // check for auth failure for rejected credentials
@@ -44,29 +53,22 @@
             // auth failure, give feedback to user
             const message = document.getElementById('message');
             message.innerText = 'Authorisation attempt failed';
+          })
+          .catch((e) => {
+            console.error(e)
+            const message = document.getElementById('message');
+            message.innerText = 'Authorisation attempt failed';
           });
       };
-
-      // handle password text field
-      const input = document.getElementById('password');
-      input.focus();
-      input.addEventListener('keyup', (e) => {
-        e.preventDefault();
-        if (e.key === 'Enter') {
-          const password = input.value;
-          input.value = ''; // clear input
-          login(password);
-        }
-      });
-
-      // handle submit / login button
-      const submit = document.getElementById('login');
-      submit.addEventListener('click', (e) => {
-        e.preventDefault();
-        const password = input.value;
-        input.value = ''; // clear input
-        login(password);
-      });
+      const form = document.querySelector('form')
+      form.addEventListener('submit', event => {
+        event.preventDefault()
+        const message = document.getElementById('message');
+        message.innerText = 'Logging in...';
+        const data = new FormData(event.currentTarget)
+        const body = Object.fromEntries(data.entries())
+        login(body)
+      })
     </script>
   </body>
 </html>

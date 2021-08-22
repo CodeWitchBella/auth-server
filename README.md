@@ -51,9 +51,14 @@ server {
 }
 ```
 
-## Configure `.env`
+## Configure
 
-- `AUTH_PORT` - listening port of application (default: 3003)
+- in `.env`:
+    - `AUTH_PORT` - listening port of application (default: 3003)
+    - `AUTH_TOKEN_SECRET` - secret used for signing the JWT
+- in `users.txt`
+    - `username:hash` pairs. If second in pair is not hash (those start with $)
+      then it automatically converts it to one. Loaded on server start.
 
 ## Production
 
