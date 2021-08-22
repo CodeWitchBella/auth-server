@@ -17,7 +17,7 @@
     <script>
       // post password to /auth
       const login = (password) => {
-        fetch('/login', {
+        fetch('/__auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password }),
@@ -37,7 +37,7 @@
 
             if (data && data.status === 'ok') {
               // auth success, cookie should be set
-              window.location.href = '/logged-in';
+              window.location.href = '/__auth/logged-in';
               return;
             }
 

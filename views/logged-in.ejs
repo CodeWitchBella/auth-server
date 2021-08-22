@@ -16,7 +16,7 @@
 
     <script>
       const logout = () => {
-        fetch('/logout', {
+        fetch('/__auth/logout', {
           method: 'POST',
         }).then((response) => {
           // check for auth failure for other reasons
@@ -26,7 +26,7 @@
           }
 
           // logout successful, redirect to login
-          window.location.href = '/login';
+          window.location.href = '/__auth/login';
         });
       };
 
@@ -37,8 +37,8 @@
       });
 
       const link = document.getElementById('link');
-      link.innerText = location.host;
-      link.href = location.host;
+      link.innerText = location.origin;
+      link.href = location.origin;
     </script>
   </body>
 </html>

@@ -10,7 +10,7 @@ const app = express();
 // rate limiter used on auth attempts
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, // limit each IP to 100 requests per windowMs
+  max: 15,
   message: {
     status: 'fail',
     message: 'Too many requests, please try again later',
@@ -21,7 +21,7 @@ const apiLimiter = rateLimit({
 dotenv.config();
 
 // config vars
-const port = process.env.AUTH_PORT || 3000;
+const port = process.env.AUTH_PORT || 3003;
 const authPassword = process.env.AUTH_PASSWORD;
 const tokenSecret = process.env.AUTH_TOKEN_SECRET;
 const defaultUser = 'user'; // default user when no username supplied
@@ -79,19 +79,14 @@ app.use(express.json());
 // if there is a valid JWT, req.user is assigned
 app.use(jwtVerify);
 
-// we don't need a root path, direct to login interface
-app.get('/', (req, res) => {
-  res.redirect('/login');
-});
-
 // interface for users who are logged in
-app.get('/logged-in', (req, res) => {
+app.get('/__auth/logged-in', (req, res) => {
   if (!req.user) return res.redirect('/login');
   return res.render('logged-in', { user: req.user || null });
 });
 
 // login interface
-app.get('/login', (req, res) => {
+app.get('/__auth/login', (req, res) => {
   // parameters from original client request
   // these could be used for validating request
   const requestUri = req.headers['x-original-uri'];
@@ -109,7 +104,7 @@ app.get('/login', (req, res) => {
 
 // endpoint called by NGINX sub request
 // expect JWT in cookie 'authToken'
-app.get('/auth', (req, res, next) => {
+app.get('/__auth/auth', (req, res, next) => {
   // parameters from original client request
   // these could be used for validating request
   const requestUri = req.headers['x-original-uri'];
@@ -139,7 +134,7 @@ app.get('/auth', (req, res, next) => {
 });
 
 // endpoint called by login page, username and password posted as JSON body
-app.post('/login', apiLimiter, (req, res) => {
+app.post('/__auth/login', apiLimiter, (req, res) => {
   const { username, password } = req.body;
 
   if (checkAuth(username, password)) {
@@ -165,20 +160,20 @@ app.post('/login', apiLimiter, (req, res) => {
 });
 
 // force logout
-app.get('/logout', (req, res) => {
+app.get('/__auth/logout', (req, res) => {
   res.clearCookie('authToken');
   res.redirect('/login');
 });
 
 // endpoint called by logout page
-app.post('/logout', (req, res) => {
+app.post('/__auth/logout', (req, res) => {
   res.clearCookie('authToken');
   res.sendStatus(200);
 });
 
 // default 404
 app.use((req, res, next) => {
-  res.status(404).send('No such page');
+  res.redirect('/__auth/login', 307);
 });
 
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
