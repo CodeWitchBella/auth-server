@@ -20,7 +20,7 @@
         </label>
         <input type="submit" value="Login" name="login" />
       </form>
-      <p id="message"></p>
+      <p id="message"><%- fail ? 'Authorisation attempt failed' : '' %></p>
     </div>
 
     <script>

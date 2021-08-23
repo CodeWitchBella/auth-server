@@ -95,6 +95,7 @@ app.use(cookieParser());
 
 // parse json body
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // check for JWT cookie from requestor
 // if there is a valid JWT, req.user is assigned
@@ -120,6 +121,7 @@ app.get('/__auth/login', (req, res) => {
   // user not logged in, show login interface
   return res.render('login', {
     referer: requestUri ? `${host}/${requestUri}` : '/',
+    fail: req.query.status === 'fail',
   });
 });
 
@@ -157,6 +159,7 @@ app.get('/__auth/auth', (req, res, next) => {
 // endpoint called by login page, username and password posted as JSON body
 app.post('/__auth/login', apiLimiter, (req, res) => {
   const { username, password } = req.body;
+  const form = req.get('content-type') === 'application/x-www-form-urlencoded'
 
   if (checkAuth(username, password)) {
     // successful auth
@@ -173,7 +176,14 @@ app.post('/__auth/login', apiLimiter, (req, res) => {
       maxAge: 1000 * 86400 * expiryDays, // milliseconds
       secure: true,
     });
+    if (form) {
+      return res.redirect('/__auth/login')
+    }
     return res.send({ status: 'ok' });
+  }
+
+  if (form) {
+    return res.redirect('/__auth/login?status=fail')
   }
 
   // failed auth
