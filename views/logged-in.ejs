@@ -24,6 +24,24 @@
       <% } %>
       <p>You are logged in.</p>
       <p>Visit <a href="/" id="link">/</a>.</p>
+
+      <h3>Change password</h3>
+      <form method="POST">
+        <div><%= message %></div>
+        <label>
+          <div>Old password</div>
+          <input type="password" name="old-password" />
+        </label>
+        <label>
+          <div>New password</div>
+          <input type="password" name="password" />
+        </label>
+        <label>
+          <div>New password again</div>
+          <input type="password" name="password2" />
+        </label>
+        <button>Change</button>
+      </form>
     </div>
 
     <script>

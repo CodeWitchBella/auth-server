@@ -121,10 +121,40 @@ app.use(jwtVerify);
 app.get('/__auth/logged-in', (req, res) => {
   const user = req.user;
   if (!user) return res.redirect('/__auth/login');
+  const error = req.query['error'];
   return res.render('logged-in', {
     user: user.name || null,
     groups: user.groups,
+    message:
+      error === 'empty'
+        ? 'Password must not be empty'
+        : error === 'wrong'
+        ? 'Old password is incorrect'
+        : error === 'typo'
+        ? 'Passwords are not the same'
+        : 'success' in req.query
+        ? 'Password was changed successfully'
+        : null,
   });
+});
+
+app.post('/__auth/logged-in', (req, res) => {
+  const user = req.user;
+  if (!user) return res.redirect('/login');
+  const { 'old-password': old, password, password2 } = req.body;
+  if (!password) {
+    return res.redirect('/__auth/logged-in?error=empty');
+  }
+  if (!bcrypt.compareSync(old, user.hash)) {
+    return res.redirect('/__auth/logged-in?error=wrong');
+  }
+  if (password !== password2) {
+    return res.redirect('/__auth/logged-in?error=typo');
+  }
+
+  users.set(user.name, { ...user, hash: bcrypt.hashSync(password) });
+  writeUsers(users);
+  res.redirect('/__auth/logged-in?success');
 });
 
 app.get('/__auth/manage', (req, res) => {
