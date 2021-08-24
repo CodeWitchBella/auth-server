@@ -25,10 +25,14 @@
       <% for (const user of users) { %>
       <div class="user">
         <span><%= user.name %></span>
+        <% if (user.groups.includes('admin')) { %>
+        <span style="margin-left: 8px">(admin)</span>
+        <% } else { %>
         <form method="POST">
           <button name="user" value="<%= user.name %>">Delete</button>
           <input type="hidden" name="action" value="delete" />
         </form>
+        <% } %>
       </div>
       <% } %>
       <h3 style="margin-top: 40px">Add user</h3>
