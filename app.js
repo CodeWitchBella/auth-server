@@ -8,24 +8,40 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const usersString = fs.readFileSync(path.join(__dirname, 'users.txt'), 'utf-8')
-let changed = false
-const users = new Map(usersString.split('\n').filter(line => line.includes(':') && !line.startsWith('#')).map(line => {
-  let [name, password] = line.split(':').map(v => v.trim())
-  if (!password.startsWith('$')) {
-    password = bcrypt.hashSync(password);
-    changed = true
-  }
-  return [ name, password ]
-}))
-if (changed) {
-  fs.writeFileSync(
+function loadUsers() {
+  const usersString = fs.readFileSync(
     path.join(__dirname, 'users.txt'),
-    Array.from(users.entries()).map(u => u.join(':')).join('\n') + '\n',
-    'utf-8'
-  )
+    'utf-8',
+  );
+  let changed = false;
+  const ret = new Map(
+    usersString
+      .split('\n')
+      .filter((line) => line.includes(':') && !line.startsWith('#'))
+      .map((line) => {
+        let [name, password, ...groups] = line.split(':').map((v) => v.trim());
+        if (!password.startsWith('$')) {
+          password = bcrypt.hashSync(password);
+          changed = true;
+        }
+        return [name, { hash: password, groups, name }];
+      }),
+  );
+  if (changed) writeUsers(ret);
+  return ret;
 }
 
+function writeUsers(users) {
+  fs.writeFileSync(
+    path.join(__dirname, 'users.txt'),
+    Array.from(users.values())
+      .map((u) => [u.name, u.hash, ...u.groups].join(':'))
+      .join('\n') + '\n',
+    'utf-8',
+  );
+}
+
+const users = loadUsers();
 const app = express();
 
 // rate limiter used on auth attempts
@@ -49,7 +65,7 @@ const expiryDays = 7;
 
 if (!tokenSecret) {
   console.error(
-    'Misconfigured server. Environment variables AUTH_PASSWORD and/or AUTH_TOKEN_SECRET are not configured'
+    'Misconfigured server. Environment variables AUTH_PASSWORD and/or AUTH_TOKEN_SECRET are not configured',
   );
   process.exit(1);
 }
@@ -70,15 +86,15 @@ const jwtVerify = (req, res, next) => {
       return res.status(403).send(err);
     }
 
-    req.user = decoded.user || null;
+    const user = users.get(decoded.user);
+    req.user = user || null;
     next();
   });
 };
 
-// using single password for the time being, but this could query a database etc
-const checkAuth = (user, pass) => {
-  const hash = users.get(user)
-  if (hash && bcrypt.compareSync(pass, hash)) return true;
+const checkAuth = (username, pass) => {
+  const user = users.get(username);
+  if (user && bcrypt.compareSync(pass, user.hash)) return true;
   return false;
 };
 
@@ -103,8 +119,45 @@ app.use(jwtVerify);
 
 // interface for users who are logged in
 app.get('/__auth/logged-in', (req, res) => {
-  if (!req.user) return res.redirect('/login');
-  return res.render('logged-in', { user: req.user || null });
+  const user = req.user;
+  if (!user) return res.redirect('/__auth/login');
+  return res.render('logged-in', {
+    user: user.name || null,
+    groups: user.groups,
+  });
+});
+
+app.get('/__auth/manage', (req, res) => {
+  const user = req.user;
+  if (!user) return res.redirect('/login');
+  if (!user.groups.includes('admin')) return res.redirect('/__auth/logged-in');
+
+  return res.render('manage', {
+    user: user.name || null,
+    groups: user.groups,
+    users: Array.from(users.values()).map(({ hash, ...rest }) => rest),
+  });
+});
+
+app.post('/__auth/manage', (req, res) => {
+  const user = req.user;
+  if (!user) return res.redirect('/login');
+  if (!user.groups.includes('admin')) return res.redirect('/__auth/logged-in');
+  if (req.body['action'] === 'delete') {
+    if (req.body['user']) {
+      users.delete(req.body['user']);
+      writeUsers(users);
+    }
+  } else if (req.body['action'] === 'add') {
+    const { username, password } = req.body;
+    users.set(username, {
+      name: username,
+      hash: bcrypt.hashSync(password),
+      groups: [],
+    });
+    writeUsers(users);
+  }
+  res.redirect('/__auth/manage');
 });
 
 // login interface
@@ -159,7 +212,7 @@ app.get('/__auth/auth', (req, res, next) => {
 // endpoint called by login page, username and password posted as JSON body
 app.post('/__auth/login', apiLimiter, (req, res) => {
   const { username, password } = req.body;
-  const form = req.get('content-type') === 'application/x-www-form-urlencoded'
+  const form = req.get('content-type') === 'application/x-www-form-urlencoded';
 
   if (checkAuth(username, password)) {
     // successful auth
@@ -177,13 +230,13 @@ app.post('/__auth/login', apiLimiter, (req, res) => {
       secure: true,
     });
     if (form) {
-      return res.redirect('/__auth/login')
+      return res.redirect('/__auth/login');
     }
     return res.send({ status: 'ok' });
   }
 
   if (form) {
-    return res.redirect('/__auth/login?status=fail')
+    return res.redirect('/__auth/login?status=fail');
   }
 
   // failed auth

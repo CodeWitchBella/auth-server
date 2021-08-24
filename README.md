@@ -59,6 +59,7 @@ server {
 - in `users.txt`
     - `username:hash` pairs. If second in pair is not hash (those start with $)
       then it automatically converts it to one. Loaded on server start.
+    - you can also append `:admin` to specify that user is admin
 
 ## Production
 

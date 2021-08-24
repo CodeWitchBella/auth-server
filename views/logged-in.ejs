@@ -10,6 +10,18 @@
     <div class="container">
       <input type="submit" value="Logout" id="logout" />
       <h1>Hello <%= user %></h1>
+      <p>
+        <%= groups?.length === 1 ? 'You are in following group: ' : '' %>
+        <!---->
+        <%= groups?.length > 1 ? 'You are in following groups: ' : '' %>
+        <!---->
+        <%= groups?.length > 0 ? groups.join(', ') : '' %>
+      </p>
+      <% if (groups.includes('admin')) { %>
+      <p>
+        <a href="manage">Manage users</a>
+      </p>
+      <% } %>
       <p>You are logged in.</p>
       <p>Visit <a href="/" id="link">/</a>.</p>
     </div>

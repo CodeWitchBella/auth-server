@@ -12,11 +12,11 @@
       <form method="POST" action="/__auth/login">
         <label>
           <div>Name</div>
-          <input type="text" name="username" name="user" />
+          <input type="text" name="username" />
         </label>
         <label>
           <div>Password</div>
-          <input type="password" name="password" name="password" />
+          <input type="password" name="password" />
         </label>
         <input type="submit" value="Login" name="login" />
       </form>
@@ -55,20 +55,20 @@
             message.innerText = 'Authorisation attempt failed';
           })
           .catch((e) => {
-            console.error(e)
+            console.error(e);
             const message = document.getElementById('message');
             message.innerText = 'Authorisation attempt failed';
           });
       };
-      const form = document.querySelector('form')
-      form.addEventListener('submit', event => {
-        event.preventDefault()
+      const form = document.querySelector('form');
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
         const message = document.getElementById('message');
         message.innerText = 'Logging in...';
-        const data = new FormData(event.currentTarget)
-        const body = Object.fromEntries(data.entries())
-        login(body)
-      })
+        const data = new FormData(event.currentTarget);
+        const body = Object.fromEntries(data.entries());
+        login(body);
+      });
     </script>
   </body>
 </html>

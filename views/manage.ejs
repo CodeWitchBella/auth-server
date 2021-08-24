@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Users</title>
+    <%- include('head') %>
+    <style>
+      .user {
+        display: flex;
+        align-items: center;
+      }
+      .user form,
+      .user button {
+        margin: 0;
+        margin-left: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="logged-in">Back to user page</a>
+      <h2>Manage users</h2>
+      <h3>User list</h3>
+      <% for (const user of users) { %>
+      <div class="user">
+        <span><%= user.name %></span>
+        <form method="POST">
+          <button name="user" value="<%= user.name %>">Delete</button>
+          <input type="hidden" name="action" value="delete" />
+        </form>
+      </div>
+      <% } %>
+      <h3 style="margin-top: 40px">Add user</h3>
+      <form method="POST">
+        <label>
+          <div>Name</div>
+          <input type="text" name="username" />
+        </label>
+        <label>
+          <div>Password</div>
+          <input type="password" name="password" />
+        </label>
+        <button name="action" value="add">Add</button>
+      </form>
+    </div>
+  </body>
+</html>
