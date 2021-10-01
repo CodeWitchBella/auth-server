@@ -60,6 +60,7 @@ dotenv.config();
 // config vars
 const port = process.env.AUTH_PORT || 3003;
 const tokenSecret = process.env.AUTH_TOKEN_SECRET;
+const bypassToken = process.env.AUTH_BYPASS;
 const defaultUser = 'user'; // default user when no username supplied
 const expiryDays = 7;
 
@@ -217,6 +218,10 @@ app.get('/__auth/auth', (req, res, next) => {
   const requestUri = req.headers['x-original-uri'];
   const remoteAddr = req.headers['x-original-remote-addr'];
   const host = req.headers['x-original-host'];
+  if (bypassToken && req.headers['x-auth-bypass'] === bypassToken) {
+    // bypass token is configured and corresponding header is correct
+    return res.sendStatus(200);
+  }
 
   if (req.user) {
     // user is already authenticated, refresh cookie

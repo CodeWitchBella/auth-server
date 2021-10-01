@@ -42,6 +42,7 @@ server {
         proxy_set_header X-Original-URI $request_uri;
         proxy_set_header X-Original-Remote-Addr $remote_addr;
         proxy_set_header X-Original-Host $host;
+        proxy_pass_request_headers on;
     }
     location /__auth {
         proxy_pass http://127.0.0.1:3003;
@@ -56,6 +57,7 @@ server {
 - in `.env`:
     - `AUTH_PORT` - listening port of application (default: 3003)
     - `AUTH_TOKEN_SECRET` - secret used for signing the JWT
+    - `AUTH_BYPASS` - if set and request header `x-auth-bypass` is set to same value, bypass auth
 - in `users.txt`
     - `username:hash` pairs. If second in pair is not hash (those start with $)
       then it automatically converts it to one. Loaded on server start.
@@ -63,7 +65,7 @@ server {
 
 ## Production
 
-Install following systemd service
+Install following systemd service in file `/etc/systemd/system/auth.service`
 
 ```systemd
 [Unit]
